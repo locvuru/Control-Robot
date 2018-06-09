@@ -1,0 +1,173 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.IO.Ports;
+using System.Threading;
+
+
+namespace RobotControlSystem
+{
+    public partial class Form1 : Form
+    {
+        SerialPort myComPort;
+        byte Motor1 = 0;
+        byte Motor2 = 0;
+        double distance;
+        int index = 0;
+        UInt32 IRRange = 0;
+        UInt32 IRRange1 = 0;
+        double distance1;
+
+        public Form1()
+        {
+            InitializeComponent();
+            myComPort = new SerialPort();
+        }
+        
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            if (myComPort.IsOpen == true)
+            {
+                timer1.Enabled = false;
+                myComPort.Close();
+            }
+            else
+            {
+                myComPort.PortName = textBox1.Text;
+                myComPort.BaudRate = 38400;
+                myComPort.DataBits = 8;
+                myComPort.Parity = Parity.None;
+                myComPort.StopBits = StopBits.One;
+                myComPort.ReadTimeout = -1;
+                myComPort.WriteTimeout = -1;
+
+                myComPort.Open();
+                timer1.Enabled = true;
+            }
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            if (myComPort.IsOpen == true)
+            {
+                if (((sbyte)Motor1 < 0 && (sbyte)Motor2 > 0) || ((sbyte)Motor1 > 0 && (sbyte)Motor2 < 0))
+                {
+                    Thread.Sleep(515);
+                }
+
+                byte[] buffer = new byte[8] { (byte)'S', Motor1, Motor2, 0, 0, 0, 0, 0 };
+                myComPort.Write(buffer, 0, 3);
+
+                int count = 0;
+                while (count < 8) count += myComPort.Read(buffer, count, 8 - count);
+
+                IRRange = BitConverter.ToUInt32(buffer, 0);
+                distance = 27.86 * Math.Pow((double)IRRange / 1241, (double)-1.15);
+
+                IRRange1 = BitConverter.ToUInt32(buffer, 4);
+                distance1 = 27.86 * Math.Pow((double)IRRange1 / 1241, (double)-1.15);
+
+                textBox2.Text = (distance).ToString();
+                textBox3.Text = (distance1).ToString();
+
+                if (distance <= 70)
+                {
+                    if (distance1 >= 30)
+                    {
+                        Motor1 = 100;
+                        Motor2 = 100;
+                    }
+                    else
+                    {
+                        unchecked
+                        {
+                            Motor1 = 100;
+                            Motor2 = (byte)-100;
+                        }
+                    }
+                }
+                else
+                {
+                    unchecked
+                    {
+                        Motor1 = (byte)-100;
+                        Motor2 = 100;
+                    }
+                }
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            unchecked
+            {
+                Motor1 = 100;
+                Motor2 = 100;
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            Motor1 = 0;
+            Motor2 = 0;
+
+            if (myComPort.IsOpen == true)
+            {
+                byte[] buffer = new byte[4] { (byte)'S', Motor1, Motor2, 0 };
+                myComPort.Write(buffer, 0, 3);
+            }
+
+            timer1.Stop();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            unchecked
+            {
+                Motor1 = 100;
+                Motor2 = (byte)-100;
+
+            }
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            unchecked
+            {
+                Motor1 = (byte)-100;
+                Motor2 = 100;
+
+            }
+        }
+
+        private void textBox2_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            unchecked
+            {
+                Motor1 = (byte)-100;
+                Motor2 = (byte)-100;
+            }
+        }
+
+        private void textBox3_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+    }
+}
